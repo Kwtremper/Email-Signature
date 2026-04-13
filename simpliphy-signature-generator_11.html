@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Simpliphy Email Signature Generator</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --green: #3DD44C; --green-dark: #2ab83a; --bg: #0e1117; --surface: #161b25;
+    --surface2: #1e2535; --border: #2a3347; --text: #e8edf5; --text-muted: #7a8499; --error: #ff5a5a;
+  }
+  body { font-family: 'DM Sans', Arial, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; }
+  header { padding: 24px 40px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 14px; }
+  header img { width: 38px; height: 38px; border-radius: 8px; }
+  header h1 { font-size: 17px; font-weight: 600; letter-spacing: -0.3px; }
+  header span { color: var(--text-muted); font-size: 13px; margin-left: 4px; font-weight: 400; }
+  .main { display: grid; grid-template-columns: 400px 1fr; flex: 1; }
+  .panel { padding: 32px 28px; border-right: 1px solid var(--border); overflow-y: auto; }
+  .panel h2 { font-size: 11px; font-weight: 600; letter-spacing: 0.09em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 20px; }
+  .field { margin-bottom: 16px; }
+  label { display: block; font-size: 12px; font-weight: 500; color: var(--text-muted); margin-bottom: 6px; }
+  label .req { color: var(--green); margin-left: 2px; }
+  input[type="text"], input[type="email"], input[type="tel"], input[type="url"] {
+    width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px;
+    padding: 9px 13px; font-size: 13px; color: var(--text); font-family: 'DM Sans', Arial, sans-serif;
+    outline: none; transition: border-color 0.15s;
+  }
+  input:focus { border-color: var(--green); }
+  input.error { border-color: var(--error); }
+  .error-msg { font-size: 11px; color: var(--error); margin-top: 4px; display: none; }
+  .error-msg.visible { display: block; }
+  .hint { font-size: 11px; color: var(--text-muted); margin-top: 5px; line-height: 1.6; }
+  .hint strong { color: var(--text); }
+  .divider { border: none; border-top: 1px solid var(--border); margin: 24px 0; }
+  .btn-generate {
+    width: 100%; background: var(--green); color: #0a1a0a; font-family: 'DM Sans', Arial, sans-serif;
+    font-size: 14px; font-weight: 600; border: none; border-radius: 9px; padding: 13px;
+    cursor: pointer; transition: background 0.15s, transform 0.1s; margin-top: 6px;
+  }
+  .btn-generate:hover { background: var(--green-dark); }
+  .btn-generate:active { transform: scale(0.98); }
+  .preview-panel { padding: 32px 36px; display: flex; flex-direction: column; }
+  .preview-panel h2 { font-size: 11px; font-weight: 600; letter-spacing: 0.09em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 20px; }
+  .preview-window { background: #ffffff; border-radius: 12px; padding: 32px; min-height: 160px; display: flex; align-items: flex-start; }
+  .copy-actions { display: flex; gap: 10px; margin-top: 18px; }
+  .btn-copy, .btn-copy-rich, .btn-instructions {
+    flex: 1; padding: 11px; border-radius: 8px; font-family: 'DM Sans', Arial, sans-serif;
+    font-size: 12px; font-weight: 500; cursor: pointer; border: none; transition: all 0.15s; text-align: center;
+  }
+  .btn-copy { background: var(--green); color: #0a1a0a; }
+  .btn-copy:hover { background: var(--green-dark); }
+  .btn-copy-rich { background: var(--surface2); color: var(--text); border: 1px solid var(--green); }
+  .btn-copy-rich:hover { background: var(--border); }
+  .btn-instructions { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+  .btn-instructions:hover { border-color: var(--green); }
+  .method-labels { display: flex; gap: 10px; margin-top: 6px; }
+  .method-label { flex: 1; font-size: 10px; color: var(--text-muted); text-align: center; line-height: 1.5; }
+  .copy-confirm { font-size: 12px; color: var(--green); margin-top: 8px; text-align: center; min-height: 16px; }
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.75); z-index: 100; align-items: center; justify-content: center; }
+  .modal-overlay.open { display: flex; }
+  .modal { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 32px; max-width: 560px; width: 90%; max-height: 85vh; overflow-y: auto; }
+  .modal h3 { font-size: 17px; font-weight: 600; margin-bottom: 4px; }
+  .modal .subtitle { font-size: 12px; color: var(--text-muted); margin-bottom: 20px; }
+  .method-tabs { display: flex; gap: 6px; margin-bottom: 20px; }
+  .method-tab { flex: 1; padding: 9px; border-radius: 7px; border: 1px solid var(--border); background: transparent; color: var(--text-muted); font-family: 'DM Sans', Arial, sans-serif; font-size: 12px; font-weight: 500; cursor: pointer; transition: all 0.15s; text-align: center; }
+  .method-tab.active { border-color: var(--green); color: var(--text); background: var(--surface2); }
+  .method-content { display: none; }
+  .method-content.active { display: block; }
+  .step { display: flex; gap: 12px; margin-bottom: 16px; }
+  .step-num { width: 24px; height: 24px; border-radius: 50%; background: var(--green); color: #0a1a0a; font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 2px; }
+  .step-body { font-size: 13px; line-height: 1.6; color: var(--text); }
+  .step-body strong { color: var(--green); }
+  .step-body code { background: var(--surface2); border: 1px solid var(--border); border-radius: 4px; padding: 1px 5px; font-size: 11px; font-family: monospace; }
+  .modal-close { margin-top: 20px; width: 100%; padding: 11px; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-family: 'DM Sans', Arial, sans-serif; font-size: 13px; font-weight: 500; cursor: pointer; }
+  .modal-close:hover { border-color: var(--green); }
+  #rich-stage { position: fixed; left: -9999px; top: 0; background: white; padding: 16px; }
+  @media (max-width: 820px) {
+    .main { grid-template-columns: 1fr; }
+    .panel { border-right: none; border-bottom: 1px solid var(--border); }
+    .copy-actions { flex-direction: column; }
+    .method-labels { flex-direction: column; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <img src="https://raw.githubusercontent.com/Kwtremper/Email-Signature/541f3ba8b9e23ec0e161aeaf6ad746fc4a00742c/Simpliphy%20Icon.png" alt="Simpliphy">
+  <div><h1>Email Signature Generator <span>by Simpliphy</span></h1></div>
+</header>
+
+<div class="main">
+  <div class="panel">
+    <h2>Your Information</h2>
+    <div class="field">
+      <label>Full Name <span class="req">*</span></label>
+      <input type="text" id="f-name" placeholder="Karl Tremper" oninput="updatePreview()">
+      <div class="error-msg" id="err-name">Please enter your full name</div>
+    </div>
+    <div class="field">
+      <label>Job Title <span class="req">*</span></label>
+      <input type="text" id="f-title" placeholder="VP of Client Success" oninput="updatePreview()">
+      <div class="error-msg" id="err-title">Please enter your job title</div>
+    </div>
+    <div class="field">
+      <label>Email Address</label>
+      <input type="email" id="f-email" placeholder="your.name@simpliphy.com" oninput="updatePreview()">
+    </div>
+    <div class="field">
+      <label>Phone Number</label>
+      <input type="tel" id="f-phone" placeholder="(336) 469-5299" oninput="updatePreview()">
+    </div>
+    <hr class="divider">
+    <h2>LinkedIn Profile</h2>
+    <div class="field">
+      <label>Your Personal LinkedIn URL</label>
+      <input type="url" id="f-linkedin" placeholder="https://www.linkedin.com/in/your-name/" oninput="updatePreview()">
+      <div class="hint">
+        Open LinkedIn → click your profile photo → "View Profile" → copy the URL from your browser's address bar.<br>
+        Should look like: <strong>linkedin.com/in/firstname-lastname</strong>
+      </div>
+    </div>
+    <hr class="divider">
+    <button class="btn-generate" onclick="generateSignature()">✦ Generate My Signature</button>
+  </div>
+
+  <div class="preview-panel">
+    <h2>Live Preview</h2>
+    <div class="preview-window"><div id="sig-preview"></div></div>
+    <div class="copy-actions">
+      <button class="btn-copy-rich" onclick="copyRichText()">⌘ Copy for Outlook (Mac)</button>
+      <button class="btn-copy" onclick="copyHTML()">Copy Raw HTML</button>
+      <button class="btn-instructions" onclick="document.getElementById('modal').classList.add('open')">How to Install</button>
+    </div>
+    <div class="method-labels">
+      <div class="method-label">Paste directly into Outlook's signature editor on Mac</div>
+      <div class="method-label">For Outlook on Windows or web-based platforms</div>
+      <div class="method-label">Step-by-step instructions for Mac &amp; Windows</div>
+    </div>
+    <div class="copy-confirm" id="copy-confirm"></div>
+  </div>
+</div>
+
+<div id="rich-stage"></div>
+
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <h3>Installing your signature in Outlook</h3>
+    <p class="subtitle">Choose your platform below</p>
+    <div class="method-tabs">
+      <button class="method-tab active" onclick="switchMethod('mac', this)">Mac</button>
+      <button class="method-tab" onclick="switchMethod('win', this)">Windows</button>
+    </div>
+    <div class="method-content active" id="method-mac">
+      <div class="step"><div class="step-num">1</div><div class="step-body">Fill in your details and click <strong>Generate My Signature</strong>.</div></div>
+      <div class="step"><div class="step-num">2</div><div class="step-body">Click <strong>⌘ Copy for Outlook (Mac)</strong>.</div></div>
+      <div class="step"><div class="step-num">3</div><div class="step-body">In Outlook, go to <strong>Outlook menu → Preferences → Signatures → +</strong>. Name it "Simpliphy".</div></div>
+      <div class="step"><div class="step-num">4</div><div class="step-body">Click <strong>Edit</strong>, select all (<code>Cmd+A</code>), delete, then paste (<code>Cmd+V</code>).</div></div>
+      <div class="step"><div class="step-num">5</div><div class="step-body">Set as default for <strong>New Messages</strong> and <strong>Replies</strong>, then send yourself a test email.</div></div>
+    </div>
+    <div class="method-content" id="method-win">
+      <div class="step"><div class="step-num">1</div><div class="step-body">Fill in your details and click <strong>Generate My Signature</strong>.</div></div>
+      <div class="step"><div class="step-num">2</div><div class="step-body">Click <strong>Copy Raw HTML</strong>.</div></div>
+      <div class="step"><div class="step-num">3</div><div class="step-body">Open <strong>Notepad</strong>, paste the HTML, save as <code>Simpliphy.htm</code> with file type set to "All Files".</div></div>
+      <div class="step"><div class="step-num">4</div><div class="step-body">Paste <code>%APPDATA%\Microsoft\Signatures</code> into Windows Explorer — drop your file in there.</div></div>
+      <div class="step"><div class="step-num">5</div><div class="step-body">Open Outlook → <strong>File → Options → Mail → Signatures</strong>. Set as default and send a test email.</div></div>
+    </div>
+    <button class="modal-close" onclick="document.getElementById('modal').classList.remove('open')">Close</button>
+  </div>
+</div>
+
+<script>
+const LOGO_URL = "https://raw.githubusercontent.com/Kwtremper/Email-Signature/541f3ba8b9e23ec0e161aeaf6ad746fc4a00742c/Simpliphy%20Icon.png";
+const LINKEDIN_ICON = "https://raw.githubusercontent.com/Kwtremper/Email-Signature/8558a2acb684a7bf903f7c92020b20915b72bb02/simpliphy-linkedin.png";
+const YOUTUBE_ICON = "https://raw.githubusercontent.com/Kwtremper/Email-Signature/8558a2acb684a7bf903f7c92020b20915b72bb02/Siimpliphy-youtube.png";
+const COMPANY_LINKEDIN = "https://www.linkedin.com/company/simpliphy-inc-/";
+const YOUTUBE = "https://www.youtube.com/@simpliphyinc";
+const WEBSITE = "https://simpliphy.com/";
+
+function val(id) { return document.getElementById(id).value.trim(); }
+
+function switchMethod(id, btn) {
+  document.querySelectorAll('.method-tab').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.method-content').forEach(c => c.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('method-' + id).classList.add('active');
+}
+
+function buildSignatureHTML(name, title, email, phone, linkedinUrl) {
+  const phoneRow = phone
+    ? `<tr><td style="font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#000000;padding-bottom:18px;">P: <a href="tel:${phone.replace(/\D/g,'')}" style="color:#000000;text-decoration:underline;">${phone}</a></td></tr>`
+    : `<tr><td style="padding-bottom:18px;"></td></tr>`;
+
+  const personalLI = linkedinUrl
+    ? `<td style="padding-right:12px;"><a href="${linkedinUrl}" target="_blank" style="text-decoration:none;display:block;"><img src="${LINKEDIN_ICON}" width="18" alt="LinkedIn" style="display:block;border:0;height:auto;"></a></td><td style="padding-right:12px;"><div style="width:1px;height:18px;background:#cccccc;"></div></td>`
+    : '';
+
+  return `<table cellpadding="0" cellspacing="0" border="0" style="background:#ffffff;">
+  <tr>
+    <td valign="top" style="padding-right:16px;">
+      <a href="${WEBSITE}" target="_blank">
+        <img src="${LOGO_URL}" width="56" alt="Simpliphy" style="display:block;border-radius:10px;border:0;height:auto;">
+      </a>
+    </td>
+    <td valign="top">
+      <table cellpadding="0" cellspacing="0" border="0">
+        <tr><td style="font-family:Arial,Helvetica,sans-serif;font-size:17px;font-weight:700;color:#000000;padding-bottom:2px;white-space:nowrap;">${name || 'Your Name'}</td></tr>
+        <tr><td style="font-family:Arial,Helvetica,sans-serif;font-size:16px;font-weight:400;color:#000000;padding-bottom:8px;max-width:300px;line-height:1.25;">${title || 'Your Title'}</td></tr>
+        ${email ? `<tr><td style="font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#000000;padding-bottom:3px;">E: <a href="mailto:${email}" style="color:#000000;text-decoration:underline;">${email}</a></td></tr>` : ''}
+        ${phoneRow}
+        <tr><td>
+          <table cellpadding="0" cellspacing="0" border="0"><tr>
+            ${personalLI}
+            <td style="padding-right:6px;"><a href="${COMPANY_LINKEDIN}" target="_blank" style="text-decoration:none;display:block;"><img src="${LINKEDIN_ICON}" width="18" alt="Simpliphy LinkedIn" style="display:block;border:0;height:auto;"></a></td>
+            <td style="padding-left:6px;"><a href="${YOUTUBE}" target="_blank" style="text-decoration:none;display:block;"><img src="${YOUTUBE_ICON}" width="18" alt="YouTube" style="display:block;border:0;height:auto;"></a></td>
+          </tr></table>
+        </td></tr>
+      </table>
+    </td>
+  </tr>
+</table>`;
+}
+
+function updatePreview() {
+  document.getElementById('sig-preview').innerHTML = buildSignatureHTML(
+    val('f-name'), val('f-title'), val('f-email'), val('f-phone'), val('f-linkedin')
+  );
+}
+
+function validate() {
+  let ok = true;
+  [
+    { id: 'f-name', errId: 'err-name', test: v => v.length > 0 },
+    { id: 'f-title', errId: 'err-title', test: v => v.length > 0 },
+  ].forEach(({ id, errId, test }) => {
+    const v = val(id);
+    const passes = test(v);
+    document.getElementById(id).classList.toggle('error', !passes);
+    document.getElementById(errId).classList.toggle('visible', !passes);
+    if (!passes) ok = false;
+  });
+  return ok;
+}
+
+function generateSignature() {
+  if (!validate()) return;
+  updatePreview();
+  showConfirm('✓ Signature ready — use the copy buttons below!');
+}
+
+function copyHTML() {
+  const html = buildSignatureHTML(val('f-name'), val('f-title'), val('f-email'), val('f-phone'), val('f-linkedin'));
+  // Try modern clipboard API first, fall back to textarea method
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(html)
+      .then(() => showConfirm('✓ HTML copied! Paste into your email platform.'))
+      .catch(() => copyHTMLFallback(html));
+  } else {
+    copyHTMLFallback(html);
+  }
+}
+
+function copyHTMLFallback(html) {
+  const ta = document.createElement('textarea');
+  ta.value = html;
+  ta.style.position = 'fixed';
+  ta.style.left = '-9999px';
+  ta.style.top = '0';
+  document.body.appendChild(ta);
+  ta.focus();
+  ta.select();
+  try {
+    document.execCommand('copy');
+    showConfirm('✓ HTML copied! Paste into your email platform.');
+  } catch(e) {
+    showConfirm('⚠ Copy failed — please select all and copy manually.');
+  }
+  document.body.removeChild(ta);
+}
+
+function copyRichText() {
+  const html = buildSignatureHTML(val('f-name'), val('f-title'), val('f-email'), val('f-phone'), val('f-linkedin'));
+  const stage = document.getElementById('rich-stage');
+  stage.innerHTML = html;
+  const range = document.createRange();
+  range.selectNodeContents(stage);
+  const sel = window.getSelection();
+  sel.removeAllRanges();
+  sel.addRange(range);
+  try {
+    document.execCommand('copy');
+    showConfirm('✓ Copied! Paste directly into Outlook\'s signature editor.');
+  } catch(e) {
+    showConfirm('⚠ Rich copy failed — try "Copy Raw HTML" instead.');
+  }
+  sel.removeAllRanges();
+  stage.innerHTML = '';
+}
+
+function showConfirm(msg) {
+  const el = document.getElementById('copy-confirm');
+  el.textContent = msg;
+  setTimeout(() => el.textContent = '', 4000);
+}
+
+window.onload = updatePreview;
+</script>
+</body>
+</html>
